@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceQuote AI - Voice-First Quotation Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #2B8F8F;
+            --primary-dark: #1a5555;
+            --accent: #FF6B4A;
+            --bg-light: #F8F9FA;
+            --bg-white: #FFFFFF;
+            --text-dark: #1A202C;
+            --text-gray: #718096;
+            --border-color: #E2E8F0;
+            --success: #48BB78;
+            --warning: #F6AD55;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .voice-input-section {
+            text-align: center;
+        }
+
+        .mic-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--accent) 0%, #FF4A2B 100%);
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            margin: 20px auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 74, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mic-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 107, 74, 0.4);
+        }
+
+        .mic-button.recording {
+            animation: pulse 1.5s infinite;
+            background: linear-gradient(135deg, #FF4A2B 0%, var(--accent) 100%);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: var(--text-gray);
+            margin-top: 10px;
+            min-height: 20px;
+        }
+
+        .transcribed-text {
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: var(--text-dark);
+            min-height: 60px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(43, 143, 143, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(43, 143, 143, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-light);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(43, 143, 143, 0.05);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #38a169;
+        }
+
+        .btn-full {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .items-list {
+            margin-top: 15px;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 80px 40px;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: var(--bg-light);
+            border-radius: 6px;
+            align-items: end;
+        }
+
+        @media (max-width: 600px) {
+            .item-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .item-row input {
+            font-size: 13px;
+            padding: 8px;
+        }
+
+        .item-row button {
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .preview-section {
+            background: var(--bg-light);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .preview-section h4 {
+            font-size: 13px;
+            color: var(--text-gray);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pricing-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .pricing-table th {
+            background: white;
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .pricing-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .pricing-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .total-row {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 14px;
+        }
+
+        .quotation-preview {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+        }
+
+        .quotation-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .quotation-header h3 {
+            color: var(--primary);
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        .quotation-header p {
+            font-size: 12px;
+            color: var(--text-gray);
+        }
+
+        .quotation-client-info {
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .quotation-client-info div {
+            margin-bottom: 4px;
+        }
+
+        .quotation-client-info span {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .quotation-table {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .quotation-table th {
+            background: var(--primary);
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .quotation-table td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .quotation-table tr:last-child td {
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .quotation-totals {
+            margin-left: auto;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .quotation-total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .quotation-total-row.final {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--primary);
+            border-bottom: none;
+            padding-top: 10px;
+        }
+
+        .quotation-terms {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            font-size: 12px;
+        }
+
+        .quotation-terms h5 {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .quotation-terms p {
+            color: var(--text-gray);
+            line-height: 1.5;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .alert-info {
+            background: rgba(43, 143, 143, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(43, 143, 143, 0.2);
+        }
+
+        .alert-success {
+            background: rgba(72, 187, 120, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(72, 187, 120, 0.2);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 10px 15px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-gray);
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .step-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 22px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .mic-button {
+                width: 100px;
+                height: 100px;
+                font-size: 32px;
+            }
+
+            .quotation-preview {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎤 VoiceQuote AI</h1>
+            <p>Transform your voice into professional quotations in seconds. Perfect for Indian MSMEs, freelancers, and small businesses.</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- LEFT COLUMN: Voice Input & Smart Extraction -->
+            <div class="card">
+                <h2><span class="step-badge">1</span>Voice Quotation</h2>
+                <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 15px;">Speak naturally. We handle the rest.</p>
+                
+                <div class="voice-input-section">
+                    <button class="mic-button" id="micBtn" title="Click to start recording">
+                        🎤
+                    </button>
+                    <p class="status-text" id="statusText">Ready to record</p>
+                    <div class="transcribed-text" id="transcribedText" style="display:none;"></div>
+                </div>
+
+                <div class="alert alert-info" style="margin-top: 20px;">
+                    <strong>💡 Pro Tip:</strong> Speak like you would on a WhatsApp call. Example: <br/>
+                    <em>"Website design for ABC Company, 5 pages, 30 thousand rupees, 50% advance, 2 weeks delivery, 2 rounds of changes"</em>
+                </div>
+
+                <h3 style="font-size: 14px; margin-top: 25px; margin-bottom: 15px; color: var(--primary);">Or Paste Transcribed Text</h3>
+                <textarea id="voiceInput" placeholder="Or paste your voice note transcription here..." style="margin-bottom: 10px;"></textarea>
+                <button class="btn btn-primary btn-full" onclick="extractFields()">
+                    🤖 Extract Fields with AI
+                </button>
+            </div>
+
+            <!-- RIGHT COLUMN: Field Extraction & Smart Q&A -->
+            <div class="card">
+                <h2><span class="step-badge">2</span>Smart Extraction & Q&A</h2>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('details')">Client Details</button>
+                    <button class="tab" onclick="switchTab('items')">Items</button>
+                    <button class="tab" onclick="switchTab('terms')">Terms</button>
+                </div>
+
+                <!-- Details Tab -->
+                <div id="details" class="tab-content active">
+                    <div class="form-group">
+                        <label>Your Business Name</label>
+                        <input type="text" id="businessName" placeholder="e.g., ABC Design Studio" value="VoiceQuote Solutions">
+                    </div>
+                    <div class="form-group">
+                        <label>Client Name *</label>
+                        <input type="text" id="clientName" placeholder="e.g., Ravi Textiles">
+                    </div>
+                    <div class="form-group">
+                        <label>Client Email</label>
+                        <input type="email" id="clientEmail" placeholder="client@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Client Phone</label>
+                        <input type="tel" id="clientPhone" placeholder="+91 98765 43210">
+                    </div>
+                    <div class="form-group">
+                        <label>Quotation Date</label>
+                        <input type="date" id="quotDate" value="">
+                    </div>
+                    <div class="form-group">
+                        <label>Validity (Days)</label>
+                        <input type="number" id="validity" value="30" min="1">
+                    </div>
+                </div>
+
+                <!-- Items Tab -->
+                <div id="items" class="tab-content">
+                    <div class="form-group">
+                        <label>Add Items / Services</label>
+                    </div>
+                    <div class="items-list" id="itemsList"></div>
+                    <button class="btn btn-secondary btn-full" onclick="addItem()" style="margin-top: 10px;">
+                        + Add Item
+                    </button>
+                </div>
+
+                <!-- Terms Tab -->
+                <div id="terms" class="tab-content">
+                    <div class="form-group">
+                        <label>Advance Payment (%)</label>
+                        <input type="number" id="advance" value="50" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Delivery Timeline</label>
+                        <input type="text" id="timeline" placeholder="e.g., 3 weeks, 2 days">
+                    </div>
+                    <div class="form-group">
+                        <label>Number of Revisions</label>
+                        <input type="number" id="revisions" value="2" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>GST Rate (%)</label>
+                        <select id="gstRate">
+                            <option value="0">No GST</option>
+                            <option value="5">5%</option>
+                            <option value="12">12%</option>
+                            <option value="18" selected>18%</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Terms / Notes</label>
+                        <textarea id="additionalTerms" placeholder="Payment mode, exclusions, etc."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUOTATION PREVIEW & GENERATION -->
+        <div class="card">
+            <h2><span class="step-badge">3</span>Quotation Preview & Export</h2>
+            
+            <div id="quotationPreview"></div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="generateQuotation()">
+                    📋 Generate Quotation
+                </button>
+                <button class="btn btn-success" id="downloadPdfBtn" onclick="downloadPDF()" style="display:none;">
+                    📥 Download PDF
+                </button>
+                <button class="btn btn-secondary" onclick="shareWhatsApp()" style="display:none;" id="shareWhatsAppBtn">
+                    💬 Share on WhatsApp
+                </button>
+                <button class="btn btn-secondary" onclick="clearForm()">
+                    🔄 Clear All
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isRecording = false;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-IN'; // Hindi-English mixed
+        }
+
+        const micBtn = document.getElementById('micBtn');
+        const statusText = document.getElementById('statusText');
+        const transcribedText = document.getElementById('transcribedText');
+        const voiceInput = document.getElementById('voiceInput');
+
+        micBtn.addEventListener('click', toggleRecording);
+
+        function toggleRecording() {
+            if (!recognition) {
+                alert('Speech Recognition not supported in your browser. Please use Chrome, Edge, or Safari.');
+                return;
+            }
+
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        function startRecording() {
+            isRecording = true;
+            micBtn.classList.add('recording');
+            statusText.textContent = '🔴 Recording...';
+            transcribedText.textContent = '';
+            transcribedText.style.display = 'none';
+            recognition.start();
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            statusText.textContent = '⏸ Recording stopped';
+            recognition.stop();
+        }
+
+        recognition.onresult = (event) => {
+            let interim = '';
+            let final = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    final += transcript + ' ';
+                } else {
+                    interim += transcript;
+                }
+            }
+
+            voiceInput.value = final + interim;
+
+            if (final) {
+                transcribedText.textContent = final;
+                transcribedText.style.display = 'block';
+                statusText.textContent = '✅ Text captured!';
+            }
+        };
+
+        recognition.onerror = (event) => {
+            statusText.textContent = '❌ Error: ' + event.error;
+        };
+
+        // Tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Initialize date to today
+        document.getElementById('quotDate').valueAsDate = new Date();
+
+        // Item Management
+        function addItem() {
+            const itemsList = document.getElementById('itemsList');
+            const itemId = Date.now();
+            const itemHTML = `
+                <div class="item-row" id="item-${itemId}">
+                    <input type="text" placeholder="Item/Service name" class="itemName" value="">
+                    <input type="number" placeholder="Quantity" class="itemQty" value="1" min="1">
+                    <input type="number" placeholder="Price" class="itemPrice" value="0" min="0" step="100">
+                    <button class="btn btn-secondary" onclick="removeItem(${itemId})" style="padding: 6px;">✕</button>
+                </div>
+            `;
+            itemsList.insertAdjacentHTML('beforeend', itemHTML);
+        }
+
+        function removeItem(itemId) {
+            document.getElementById(`item-${itemId}`).remove();
+        }
+
+        // AI Field Extraction (Simulated)
+        function extractFields() {
+            const text = document.getElementById('voiceInput').value.toLowerCase();
+            
+            // Simple pattern matching for demo
+            const clientMatch = text.match(/for\s+([A-Za-z\s]+?)(?:,|$)/);
+            const priceMatch = text.match(/(\d+)\s*(?:thousand|rupees|rs|₹)/i);
+            const advanceMatch = text.match(/(\d+)\s*(?:%|percent)\s*advance/i);
+            const daysMatch = text.match(/(\d+)\s*(?:days?|weeks?)/i);
+
+            if (clientMatch) document.getElementById('clientName').value = clientMatch[1].trim();
+            if (priceMatch) {
+                const price = parseInt(priceMatch[1]);
+                document.getElementById('itemsList').innerHTML = '';
+                addItem();
+                const lastQty = document.querySelector('.itemQty');
+                const lastPrice = document.querySelector('.itemPrice');
+                if (lastPrice) lastPrice.value = price;
+            }
+            if (advanceMatch) document.getElementById('advance').value = advanceMatch[1];
+            if (daysMatch) document.getElementById('timeline').value = daysMatch[1] + ' ' + (daysMatch[0].match(/weeks?/i) ? 'weeks' : 'days');
+
+            alert('✅ Fields extracted! Review and adjust as needed.');
+        }
+
+        // Generate Quotation
+        function generateQuotation() {
+            const clientName = document.getElementById('clientName').value;
+            const businessName = document.getElementById('businessName').value;
+            
+            if (!clientName) {
+                alert('Please enter client name');
+                return;
+            }
+
+            const items = [];
+            document.querySelectorAll('.item-row').forEach(row => {
+                const name = row.querySelector('.itemName').value;
+                const qty = parseFloat(row.querySelector('.itemQty').value) || 0;
+                const price = parseFloat(row.querySelector('.itemPrice').value) || 0;
+                if (name && qty && price) {
+                    items.push({ name, qty, price, subtotal: qty * price });
+                }
+            });
+
+            if (items.length === 0) {
+                alert('Please add at least one item');
+                return;
+            }
+
+            const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+            const gstRate = parseFloat(document.getElementById('gstRate').value) || 0;
+            const gstAmount = (subtotal * gstRate) / 100;
+            const total = subtotal + gstAmount;
+
+            const quotationDate = document.getElementById('quotDate').value;
+            const validityDays = document.getElementById('validity').value;
+            const expiryDate = new Date(new Date(quotationDate).getTime() + validityDays * 24 * 60 * 60 * 1000).toLocaleDateString();
+
+            let quotationHTML = `
+                <div id="quotationContent" style="background: white; padding: 30px; border-radius: 8px; border: 2px solid var(--primary);">
+                    <div class="quotation-header">
+                        <h3>${businessName}</h3>
+                        <p>📋 Professional Quotation</p>
+                    </div>
+
+                    <div class="quotation-client-info">
+                        <div><span>For:</span> ${clientName}</div>
+                        <div><span>Date:</span> ${quotationDate}</div>
+                        <div><span>Valid Till:</span> ${expiryDate}</div>
+                        ${document.getElementById('clientEmail').value ? `<div><span>Email:</span> ${document.getElementById('clientEmail').value}</div>` : ''}
+                        ${document.getElementById('clientPhone').value ? `<div><span>Phone:</span> ${document.getElementById('clientPhone').value}</div>` : ''}
+                    </div>
+
+                    <table class="quotation-table">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th style="text-align: right;">Qty</th>
+                                <th style="text-align: right;">Unit Price</th>
+                                <th style="text-align: right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td>${item.name}</td>
+                                    <td style="text-align: right;">${item.qty}</td>
+                                    <td style="text-align: right;">₹${item.price.toLocaleString('en-IN')}</td>
+                                    <td style="text-align: right;">₹${item.subtotal.toLocaleString('en-IN')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                        <div class="quotation-totals">
+                            <div class="quotation-total-row">
+                                <span>Subtotal:</span>
+                                <span>₹${subtotal.toLocaleString('en-IN')}</span>
+                            </div>
+                            ${gstRate > 0 ? `
+                                <div class="quotation-total-row">
+                                    <span>GST (${gstRate}%):</span>
+                                    <span>₹${gstAmount.toLocaleString('en-IN')}</span>
+                                </div>
+                            ` : ''}
+                            <div class="quotation-total-row final">
+                                <span>Total Amount:</span>
+                                <span>₹${total.toLocaleString('en-IN')}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quotation-terms">
+                        <h5>Terms & Conditions</h5>
+                        <p>
+                            <strong>Payment Terms:</strong> ${document.getElementById('advance').value}% advance, balance on delivery<br/>
+                            <strong>Delivery:</strong> ${document.getElementById('timeline').value || 'As per agreement'}<br/>
+                            <strong>Revisions:</strong> ${document.getElementById('revisions').value} rounds of changes included<br/>
+                            ${document.getElementById('additionalTerms').value ? `<strong>Additional Terms:</strong> ${document.getElementById('additionalTerms').value}` : ''}
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-gray); text-align: center;">
+                        Generated by VoiceQuote AI • ${new Date().toLocaleDateString()}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('quotationPreview').innerHTML = quotationHTML;
+            document.getElementById('downloadPdfBtn').style.display = 'inline-flex';
+            document.getElementById('shareWhatsAppBtn').style.display = 'inline-flex';
+
+            // Scroll to preview
+            document.querySelector('.card:last-child').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Download PDF
+        function downloadPDF() {
+            const element = document.getElementById('quotationContent');
+            const opt = {
+                margin: 10,
+                filename: `quotation-${document.getElementById('clientName').value}-${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Share on WhatsApp
+        function shareWhatsApp() {
+            const clientName = document.getElementById('clientName').value;
+            const total = document.getElementById('quotationContent').textContent.match(/₹([\d,]+)/)?.[1] || 'Amount';
+            const text = `Hi ${clientName}, here's your quotation. Total: ₹${total}. Generated using VoiceQuote AI.`;
+            const encoded = encodeURIComponent(text);
+            window.open(`https://wa.me/?text=${encoded}`);
+        }
+
+        // Clear Form
+        function clearForm() {
+            if (confirm('Clear all data?')) {
+                document.getElementById('voiceInput').value = '';
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientEmail').value = '';
+                document.getElementById('clientPhone').value = '';
+                document.getElementById('itemsList').innerHTML = '';
+                document.getElementById('quotationPreview').innerHTML = '';
+                document.getElementById('downloadPdfBtn').style.display = 'none';
+                document.getElementById('shareWhatsAppBtn').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
